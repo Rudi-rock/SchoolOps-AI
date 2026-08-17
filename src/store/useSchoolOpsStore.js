@@ -1,9 +1,25 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { initialData } from '../data/demoData'
 
+const STORAGE_KEY = 'schoolops-demo-data'
+
+function loadData() {
+  if (typeof window === 'undefined') return initialData
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY)
+    return saved ? { ...initialData, ...JSON.parse(saved) } : initialData
+  } catch {
+    return initialData
+  }
+}
+
 export function useSchoolOpsStore() {
-  const [data, setData] = useState(initialData)
+  const [data, setData] = useState(loadData)
   const [toast, setToast] = useState(null)
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  }, [data])
 
   const notify = useCallback((message, tone = 'success') => {
     setToast({ message, tone, id: Date.now() })
@@ -28,9 +44,23 @@ export function useSchoolOpsStore() {
     notify('Document rejected and moved to archive.', 'info')
   }, [notify])
 
+  const addTeacher = useCallback((teacher) => {
+    setData((current) => ({ ...current, teachers: [...current.teachers, { ...teacher, id: `T-${String(current.teachers.length + 1).padStart(3, '0')}`, initials: teacher.name.split(/\\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(), status: teacher.status || 'Active', workload: Number(teacher.workload) || 0, subjects: teacher.subjects.split(',').map((subject) => subject.trim()).filter(Boolean), classes: [] }] }))
+    notify(`${teacher.name} added to the teacher directory.`)
+  }, [notify])
+
   const resolveAlert = useCallback((id) => {
     setData((current) => ({ ...current, alerts: current.alerts.map((alert) => alert.id === id ? { ...alert, status: 'Resolved' } : alert) }))
     notify('Alert resolved.')
+  }, [notify])
+
+  const markAlertRead = useCallback((id) => {
+    setData((current) => ({ ...current, alerts: current.alerts.map((alert) => alert.id === id ? { ...alert, status: 'Read' } : alert) }))
+  }, [])
+
+  const markAllAlertsRead = useCallback(() => {
+    setData((current) => ({ ...current, alerts: current.alerts.map((alert) => alert.status === 'Open' ? { ...alert, status: 'Read' } : alert) }))
+    notify('All notifications marked as read.', 'info')
   }, [notify])
 
   const markAttendance = useCallback((studentId, status) => {
