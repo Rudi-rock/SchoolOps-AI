@@ -87,6 +87,6 @@ export function useSchoolOpsStore() {
     notify('Conflict resolved · Class 8A moved to Wednesday P4.')
   }, [notify])
 
-  const stats = useMemo(() => ({ students: 1248, teachers: 86, classes: 42, rooms: 31, attendance: 94.7, openAlerts: data.alerts.filter((alert) => alert.status === 'Open').length }), [data.alerts])
-  return { data, stats, toast, approveDocument, rejectDocument, resolveAlert, markAttendance, simulateRfid, generateTimetable, resolveConflict, navigateAlert }
+  const stats = useMemo(() => ({ students: 1248, teachers: data.teachers.length === initialData.teachers.length ? 86 : data.teachers.length, classes: 42, rooms: 31, attendance: 94.7, openAlerts: data.alerts.filter((alert) => alert.status === 'Open').length }), [data.alerts, data.teachers.length])
+  return { data, stats, toast, approveDocument, rejectDocument, addTeacher, resolveAlert, markAlertRead, markAllAlertsRead, markAttendance, simulateRfid, generateTimetable, resolveConflict, navigateAlert }
 }
